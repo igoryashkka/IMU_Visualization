@@ -85,6 +85,7 @@ def update_sensor_data():
         roll, pitch, yaw = angles["roll"], angles["pitch"], angles["yaw"]
 
         time.sleep(0.1)
+        
 def update_plot():
     global roll, pitch, yaw
 
@@ -104,6 +105,13 @@ def update_plot():
             [-1, 1, 1]
         ])
 
+        # Define axes vectors
+        axes = np.array([
+            [0, 0, 0], [1.5, 0, 0],  # X-axis
+            [0, 0, 0], [0, 1.5, 0],  # Y-axis
+            [0, 0, 0], [0, 0, 1.5]   # Z-axis
+        ]).reshape(-1, 3)
+
         # Rotation matrices
         def rotation_matrix(axis, theta):
             axis = axis / np.sqrt(np.dot(axis, axis))
@@ -120,6 +128,11 @@ def update_plot():
         cube = cube @ rotation_matrix([0, 1, 0], np.radians(pitch)).T
         cube = cube @ rotation_matrix([0, 0, 1], np.radians(yaw)).T
 
+        # Apply the same rotations to the axes
+        axes = axes @ rotation_matrix([1, 0, 0], np.radians(roll)).T
+        axes = axes @ rotation_matrix([0, 1, 0], np.radians(pitch)).T
+        axes = axes @ rotation_matrix([0, 0, 1], np.radians(yaw)).T
+
         # Draw cube edges
         edges = [
             (0, 1), (1, 2), (2, 3), (3, 0),
@@ -135,10 +148,10 @@ def update_plot():
                 color="blue"
             )
 
-        # Add axes arrows
-        ax.quiver(0, 0, 0, 1.5, 0, 0, color='red', label='X-axis')   # X-axis
-        ax.quiver(0, 0, 0, 0, 1.5, 0, color='green', label='Y-axis') # Y-axis
-        ax.quiver(0, 0, 0, 0, 0, 1.5, color='blue', label='Z-axis')  # Z-axis
+        # Draw rotating axes
+        ax.quiver(axes[0, 0], axes[0, 1], axes[0, 2], axes[1, 0] - axes[0, 0], axes[1, 1] - axes[0, 1], axes[1, 2] - axes[0, 2], color='red', label='X-axis')   # X-axis
+        ax.quiver(axes[2, 0], axes[2, 1], axes[2, 2], axes[3, 0] - axes[2, 0], axes[3, 1] - axes[2, 1], axes[3, 2] - axes[2, 2], color='green', label='Y-axis') # Y-axis
+        ax.quiver(axes[4, 0], axes[4, 1], axes[4, 2], axes[5, 0] - axes[4, 0], axes[5, 1] - axes[4, 1], axes[5, 2] - axes[4, 2], color='blue', label='Z-axis')  # Z-axis
 
         # Set labels and limits
         ax.set_xlim([-2, 2])
@@ -151,6 +164,7 @@ def update_plot():
         ax.legend(loc="upper left")
 
         canvas.draw()
+
 
 
 # Create GUI window
