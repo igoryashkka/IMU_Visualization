@@ -85,8 +85,6 @@ def update_sensor_data():
         roll, pitch, yaw = angles["roll"], angles["pitch"], angles["yaw"]
 
         time.sleep(0.1)
-
-# Function to update 3D visualization
 def update_plot():
     global roll, pitch, yaw
 
@@ -94,6 +92,7 @@ def update_plot():
         time.sleep(0.1)
         ax.cla()
 
+        # Cube definition
         cube = np.array([
             [-1, -1, -1],
             [1, -1, -1],
@@ -105,6 +104,7 @@ def update_plot():
             [-1, 1, 1]
         ])
 
+        # Rotation matrices
         def rotation_matrix(axis, theta):
             axis = axis / np.sqrt(np.dot(axis, axis))
             a = np.cos(theta / 2.0)
@@ -115,10 +115,12 @@ def update_plot():
                 [2 * (b * d - a * c), 2 * (c * d + a * b), a * a + d * d - b * b - c * c]
             ])
 
+        # Apply rotations to the cube
         cube = cube @ rotation_matrix([1, 0, 0], np.radians(roll)).T
         cube = cube @ rotation_matrix([0, 1, 0], np.radians(pitch)).T
         cube = cube @ rotation_matrix([0, 0, 1], np.radians(yaw)).T
 
+        # Draw cube edges
         edges = [
             (0, 1), (1, 2), (2, 3), (3, 0),
             (4, 5), (5, 6), (6, 7), (7, 4),
@@ -133,6 +135,12 @@ def update_plot():
                 color="blue"
             )
 
+        # Add axes arrows
+        ax.quiver(0, 0, 0, 1.5, 0, 0, color='red', label='X-axis')   # X-axis
+        ax.quiver(0, 0, 0, 0, 1.5, 0, color='green', label='Y-axis') # Y-axis
+        ax.quiver(0, 0, 0, 0, 0, 1.5, color='blue', label='Z-axis')  # Z-axis
+
+        # Set labels and limits
         ax.set_xlim([-2, 2])
         ax.set_ylim([-2, 2])
         ax.set_zlim([-2, 2])
@@ -140,7 +148,10 @@ def update_plot():
         ax.set_ylabel('Y')
         ax.set_zlabel('Z')
         ax.set_title("3D Orientation Visualization")
+        ax.legend(loc="upper left")
+
         canvas.draw()
+
 
 # Create GUI window
 root = tk.Tk()
