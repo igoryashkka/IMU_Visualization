@@ -9,7 +9,7 @@ import time
 import smbus
 import math
 
-# MPU6050 Registers and their Address
+
 MPU6050_ADDR = 0x68
 PWR_MGMT_1 = 0x6B
 ACCEL_XOUT_H = 0x3B
@@ -20,10 +20,10 @@ ACCEL_SCALE = 16384.0  # Accelerometer scale factor for ±2g (LSB/g)
 GYRO_SCALE = 131.0     # Gyroscope scale factor for ±250°/s (LSB/°/s)
 GRAVITY = 9.80665      # Acceleration due to gravity (m/s^2)
 
-# Global variables for roll, pitch, yaw
+
 roll, pitch, yaw = 0, 0, 0
 
-# Function to read raw data from MPU6050
+
 def read_raw_data(bus, addr, reg):
     high = bus.read_byte_data(addr, reg)
     low = bus.read_byte_data(addr, reg + 1)
@@ -32,7 +32,7 @@ def read_raw_data(bus, addr, reg):
         value = value - 65536
     return value
 
-# Function to calculate roll, pitch, yaw
+
 def calculate_roll_pitch_yaw(acc_x, acc_y, acc_z, gyro_x, gyro_y, gyro_z, dt, prev_angles):
     roll_acc = math.degrees(math.atan2(acc_y, acc_z))
     pitch_acc = math.degrees(math.atan2(-acc_x, math.sqrt(acc_y**2 + acc_z**2)))
@@ -93,7 +93,7 @@ def update_plot():
         time.sleep(0.1)
         ax.cla()
 
-        # Cube definition
+        
         cube = np.array([
             [-1, -1, -1],
             [1, -1, -1],
@@ -105,14 +105,14 @@ def update_plot():
             [-1, 1, 1]
         ])
 
-        # Define axes vectors
+        
         axes = np.array([
-            [0, 0, 0], [1.5, 0, 0],  # X-axis
-            [0, 0, 0], [0, 1.5, 0],  # Y-axis
-            [0, 0, 0], [0, 0, 1.5]   # Z-axis
+            [0, 0, 0], [1.5, 0, 0], 
+            [0, 0, 0], [0, 1.5, 0], 
+            [0, 0, 0], [0, 0, 1.5]  
         ]).reshape(-1, 3)
 
-        # Rotation matrices
+        
         def rotation_matrix(axis, theta):
             axis = axis / np.sqrt(np.dot(axis, axis))
             a = np.cos(theta / 2.0)
@@ -142,9 +142,9 @@ def update_plot():
         for edge in edges:
             start, end = edge
             ax.plot3D(
-                [cube[start, 0], cube[end, 0]],  # X-coordinates
-                [cube[start, 1], cube[end, 1]],  # Y-coordinates
-                [cube[start, 2], cube[end, 2]],  # Z-coordinates
+                [cube[start, 0], cube[end, 0]],  
+                [cube[start, 1], cube[end, 1]],  
+                [cube[start, 2], cube[end, 2]],  
                 color="blue"
             )
 
@@ -153,7 +153,9 @@ def update_plot():
         ax.quiver(axes[2, 0], axes[2, 1], axes[2, 2], axes[3, 0] - axes[2, 0], axes[3, 1] - axes[2, 1], axes[3, 2] - axes[2, 2], color='green', label='Y-axis') # Y-axis
         ax.quiver(axes[4, 0], axes[4, 1], axes[4, 2], axes[5, 0] - axes[4, 0], axes[5, 1] - axes[4, 1], axes[5, 2] - axes[4, 2], color='blue', label='Z-axis')  # Z-axis
 
-        # Set labels and limits
+        
+        ax.view_init(elev=2, azim=2)
+
         ax.set_xlim([-2, 2])
         ax.set_ylim([-2, 2])
         ax.set_zlim([-2, 2])
