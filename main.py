@@ -104,10 +104,24 @@ def DueData(inputdata):
                 # Get pressure via MAVLink
         pressure = get_mavlink_pressure()
         d = a + w + Angle + Mag + [pressure]
-        print(
-            "a(g):%10.3f %10.3f %10.3f w(deg/s):%10.3f %10.3f %10.3f Angle(deg):%10.3f %10.3f %10.3f mag:%10.3f %10.3f %10.3f pr: %10.3f"
+        log_entry = (
+            "a(g):%10.3f %10.3f %10.3f w(deg/s):%10.3f %10.3f %10.3f "
+            "Angle(deg):%10.3f %10.3f %10.3f mag:%10.3f %10.3f %10.3f pr: %10.3f\n"
             % tuple(d)
         )
+        print(log_entry, end="")
+
+        # Save to file
+        with open("log.txt", "a") as log_file:
+            log_file.write(log_entry)
+
+        #print(
+        #    "a(g):%10.3f %10.3f %10.3f w(deg/s):%10.3f %10.3f %10.3f Angle(deg):%10.3f %10.3f %10.3f mag:%10.3f %10.3f %10.3f pr: %10.3f"
+        #    % tuple(d)
+        #)
+
+
+
 
 
 def get_acc(datahex):
