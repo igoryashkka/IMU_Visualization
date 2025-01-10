@@ -1,5 +1,6 @@
 import serial
 from pymavlink import mavutil
+from datetime import datetime
 
 # Arrays to store data
 ACCData = [0.0] * 8
@@ -22,7 +23,7 @@ Mag = [0.0] * 3
 mavlink_connection = mavutil.mavlink_connection('/dev/ttyAMA2', baud=115200)
 
 
-def DueData(inputdata):
+def DueData(inputdata, log_file):
     """
     Core function to parse input data from the sensor and extract meaningful values.
     """
@@ -104,10 +105,23 @@ def DueData(inputdata):
                 # Get pressure via MAVLink
                 pressure = get_mavlink_pressure()
                 d = a + w + Angle + Mag + [pressure]
-                print(
-                    "a(g):%10.3f %10.3f %10.3f w(deg/s):%10.3f %10.3f %10.3f Angle(deg):%10.3f %10.3f %10.3f mag:%10.3f %10.3f %10.3f pressure(hPa):%10.3f"
-                    % tuple(d)
+                
+                # Create a timestamp
+                timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+                # Format output
+                output = (
+                    f"{timestamp} | "
+                    f"a(g):{d[0]:10.3f} {d[1]:10.3f} {d[2]:10.3f} "
+                    f"w(deg/s):{d[3]:10.3f} {d[4]:10.3f} {d[5]:10.3f} "
+                    f"Angle(deg):{d[6]:10.3f} {d[7]:10.3f} {d[8]:10.3f} "
+                    f"mag:{d[9]:10.3f} {d[10]:10.3f} {d[11]:10.3f} "
+                    f"pressure(hPa):{d[12]:10.3f}"
                 )
+
+                print(output)
+                log_file.write(output + "\n")
+                log_file.flush()
 
 
 def get_acc(datahex):
@@ -169,9 +183,11 @@ if __name__ == '__main__':
         ser = serial.Serial('/dev/ttyAMA2', baudrate=115200, timeout=0.5)
         print(f"Serial port opened: {ser.is_open}")
 
-        while True:
-            datahex = ser.read(33)
-            DueData(datahex)
+        with open("log.txt", "a") as log_file:
+            print("Logging data to log.txt...")
+            while True:
+                datahex = ser.read(33)
+                DueData(datahex, log_file)
 
     except serial.SerialException as e:
         print(f"Serial error: {e}")
