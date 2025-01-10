@@ -5,6 +5,7 @@ import serial
 ACCData = [0.0] * 8
 GYROData = [0.0] * 8
 AngleData = [0.0] * 8
+MagData = [0.0] * 8
 
 # Variables for frame parsing
 FrameState = 0  # Frame type (e.g., 0x51: acc, 0x52: gyro, 0x53: angle)
@@ -15,12 +16,13 @@ CheckSum = 0    # Checksum for validation
 a = [0.0] * 3  # Accelerometer data (x, y, z)
 w = [0.0] * 3  # Gyroscope data (x, y, z)
 Angle = [0.0] * 3  # Angle data (pitch, roll, yaw)
+Mag = [0.0] * 3
 
 def DueData(inputdata):
     """
     Core function to parse input data from the sensor and extract meaningful values.
     """
-    global FrameState, Bytenum, CheckSum, a, w, Angle
+    global FrameState, Bytenum, CheckSum, a, w, Angle, Mag
 
     for data in inputdata:
         # Convert byte to integer
@@ -43,6 +45,11 @@ def DueData(inputdata):
                 CheckSum += data
                 FrameState = 3
                 Bytenum = 2
+            elif data == 0x54 and Bytenum == 1:  # Angle frame
+                CheckSum += data
+                FrameState = 4
+                Bytenum = 2
+        
         elif FrameState == 1:  # Accelerometer data
             if Bytenum < 10:
                 ACCData[Bytenum - 2] = data
@@ -73,11 +80,23 @@ def DueData(inputdata):
             else:
                 if data == (CheckSum & 0xff):
                     Angle = get_angle(AngleData)
-                    d = a + w + Angle
-                    print("a(g):%10.3f %10.3f %10.3f w(deg/s):%10.3f %10.3f %10.3f Angle(deg):%10.3f %10.3f %10.3f" % tuple(d))
                 CheckSum = 0
                 Bytenum = 0
                 FrameState = 0
+        elif FrameState == 4:
+            if Bytenum < 10:
+                MagData[Bytenum - 2] = data
+                CheckSum += data
+                Bytenum += 1
+            else:
+                if data == (CheckSum & 0xff):
+                    Mag = get_mag(MagData)
+                CheckSum = 0
+                Bytenum = 0
+                FrameState = 0
+                
+        d = a + w + Angle + Mag
+        print("a(g):%10.3f %10.3f %10.3f w(deg/s):%10.3f %10.3f %10.3f Angle(deg):%10.3f %10.3f %10.3f mag:%10.3f %10.3f %10.3f" % tuple(d))
 
 def get_acc(datahex):
     """Convert raw accelerometer data to g units."""
@@ -103,6 +122,14 @@ def get_angle(datahex):
     angle_z = (datahex[5] << 8 | datahex[4]) / 32768.0 * k_angle
     return _adjust_values([angle_x, angle_y, angle_z], k_angle)
 
+def get_mag(datahex):
+    """Convert raw angle data to degrees."""
+    k_mag = 3276.80
+    mag_x = (datahex[1] << 8 | datahex[0])/ 32768.0 * k_mag
+    mag_y = (datahex[3] << 8 | datahex[2])/ 32768.0 * k_mag
+    mag_z = (datahex[5] << 8 | datahex[4])/ 32768.0 * k_mag
+    return _adjust_values([mag_x, mag_y, mag_z], k_mag)
+
 def _adjust_values(values, max_value):
     """Adjust values for overflow."""
     return [v - 2 * max_value if v >= max_value else v for v in values]
@@ -110,7 +137,7 @@ def _adjust_values(values, max_value):
 if __name__ == '__main__':
     try:
         # Initialize serial connection
-        ser = serial.Serial('/dev/serial0', baudrate=115200, timeout=0.5)
+        ser = serial.Serial('/dev/ttyAMA0', baudrate=115200, timeout=0.5)
         print(f"Serial port opened: {ser.is_open}")
 
         while True:
