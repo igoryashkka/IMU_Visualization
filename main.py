@@ -105,7 +105,7 @@ def DueData(inputdata):
                 # Get pressure via MAVLink
         pressure = get_mavlink_pressure()
         d = a + w + Angle + Mag + [pressure]
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
         log_entry = (
             f"[{timestamp}] "
             "a(g):%10.3f %10.3f %10.3f w(deg/s):%10.3f %10.3f %10.3f "
