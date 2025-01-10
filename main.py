@@ -1,6 +1,5 @@
 import serial
 from pymavlink import mavutil
-from datetime import datetime
 
 # Arrays to store data
 ACCData = [0.0] * 8
@@ -20,10 +19,10 @@ Angle = [0.0] * 3  # Angle data (pitch, roll, yaw)
 Mag = [0.0] * 3
 
 # Initialize MAVLink connection on another UART port
-mavlink_connection = mavutil.mavlink_connection('/dev/ttyAMA2', baud=115200)
+mavlink_connection = mavutil.mavlink_connection('/dev/ttyAMA3', baud=115200)
 
 
-def DueData(inputdata, log_file):
+def DueData(inputdata):
     """
     Core function to parse input data from the sensor and extract meaningful values.
     """
@@ -103,25 +102,12 @@ def DueData(inputdata, log_file):
                 FrameState = 0
 
                 # Get pressure via MAVLink
-                pressure = get_mavlink_pressure()
-                d = a + w + Angle + Mag + [pressure]
-                
-                # Create a timestamp
-                timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-                # Format output
-                output = (
-                    f"{timestamp} | "
-                    f"a(g):{d[0]:10.3f} {d[1]:10.3f} {d[2]:10.3f} "
-                    f"w(deg/s):{d[3]:10.3f} {d[4]:10.3f} {d[5]:10.3f} "
-                    f"Angle(deg):{d[6]:10.3f} {d[7]:10.3f} {d[8]:10.3f} "
-                    f"mag:{d[9]:10.3f} {d[10]:10.3f} {d[11]:10.3f} "
-                    f"pressure(hPa):{d[12]:10.3f}"
-                )
-
-                print(output)
-                log_file.write(output + "\n")
-                log_file.flush()
+        pressure = get_mavlink_pressure()
+        d = a + w + Angle + Mag + [pressure]
+        print(
+            "a(g):%10.3f %10.3f %10.3f w(deg/s):%10.3f %10.3f %10.3f Angle(deg):%10.3f %10.3f %10.3f mag:%10.3f %10.3f %10.3f pr: %10.3f"
+            % tuple(d)
+        )
 
 
 def get_acc(datahex):
@@ -164,30 +150,46 @@ def _adjust_values(values, max_value):
     """Adjust values for overflow."""
     return [v - 2 * max_value if v >= max_value else v for v in values]
 
+def set_mavlink_pressure():
+    
+    message = mavlink_connection.mav.command_long_encode(
+        mavlink_connection.target_system,  # Target system ID
+        mavlink_connection.target_component,  # Target component ID
+        mavutil.mavlink.MAV_CMD_SET_MESSAGE_INTERVAL,  # ID of command to send
+        0,  # Confirmation
+        29,  # param1: Message ID to be streamed, 26 - Scaled_IMU
+        10000, # param2: Interval in microseconds
+        0,       # param3 (unused)
+        0,       # param4 (unused)
+        0,       # param5 (unused)
+        0,       # param5 (unused)
+        0        # param6 (unused)
+        )
+    mavlink_connection.mav.send(message)
+
+
+
 
 def get_mavlink_pressure():
-    """Retrieve pressure data via MAVLink."""
     try:
         message = mavlink_connection.recv_match(type='SCALED_PRESSURE', blocking=True, timeout=0.1)
         if message:
             return message.press_abs  # Absolute pressure in hPa
         else:
-            return float('nan')  # Return NaN if no data
-    except Exception as e:
-        print(f"Error reading MAVLink pressure: {e}")
+            return float('0')  # Return NaN if no data
+    except Exception as e1:
+        print(f"Error reading MAVLink pressure: {e1}")
         return float('nan')
 
-
+set_mavlink_pressure()
 if __name__ == '__main__':
     try:
-        ser = serial.Serial('/dev/ttyAMA2', baudrate=115200, timeout=0.5)
+        ser = serial.Serial('/dev/ttyAMA0', baudrate=115200, timeout=0.5)
         print(f"Serial port opened: {ser.is_open}")
 
-        with open("log.txt", "a") as log_file:
-            print("Logging data to log.txt...")
-            while True:
-                datahex = ser.read(33)
-                DueData(datahex, log_file)
+        while True:
+            datahex = ser.read(33)
+            DueData(datahex)
 
     except serial.SerialException as e:
         print(f"Serial error: {e}")
