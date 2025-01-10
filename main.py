@@ -1,5 +1,6 @@
 import serial
 from pymavlink import mavutil
+from datetime import datetime
 
 # Arrays to store data
 ACCData = [0.0] * 8
@@ -104,7 +105,9 @@ def DueData(inputdata):
                 # Get pressure via MAVLink
         pressure = get_mavlink_pressure()
         d = a + w + Angle + Mag + [pressure]
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         log_entry = (
+            f"[{timestamp}] "
             "a(g):%10.3f %10.3f %10.3f w(deg/s):%10.3f %10.3f %10.3f "
             "Angle(deg):%10.3f %10.3f %10.3f mag:%10.3f %10.3f %10.3f pr: %10.3f\n"
             % tuple(d)
